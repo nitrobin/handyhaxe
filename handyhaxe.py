@@ -10,6 +10,79 @@ import textwrap
 logging.basicConfig(level=logging.DEBUG, format='%(levelname)s - %(message)s')
 
 
+class Package():
+    def __init__(self):
+        self.name = ""
+        self.url = ""
+        self.packageFile = ""
+        self.packageDir = ""
+        self.exportVars = {}
+        self.exportPaths = []
+
+
+def getPackageInfo(packageName, version, platformName):
+    packages = {
+        "neko": {
+            "urls": {
+                "version": {
+                    "win": "http://nekovm.org/media/neko-{version}-win.zip",
+                    "osx": "http://nekovm.org/media/neko-{version}-osx64.tar.gz",
+                    "linux": "http://nekovm.org/media/neko-{version}-linux64.tar.gz"
+                }
+            },
+            "exportVariables": {
+                "NEKO_PATH": ".",
+                "LD_LIBRARY_PATH": "."
+            },
+            "exportPath": ["."]
+        },
+        "haxe": {
+            "urls": {
+                "version": {
+                    "win":   "https://github.com/HaxeFoundation/haxe/releases/download/{version}/haxe-{version}-win.zip",
+                    "osx":   "https://github.com/HaxeFoundation/haxe/releases/download/{version}/haxe-{version}-osx.tar.gz",
+                    "linux": "https://github.com/HaxeFoundation/haxe/releases/download/{version}/haxe-{version}-linux64.tar.gz"
+                },
+                "latest": {
+                    "win":   "http://hxbuilds.s3-website-us-east-1.amazonaws.com/builds/haxe/windows/haxe_latest.zip",
+                    "osx":   "http://hxbuilds.s3-website-us-east-1.amazonaws.com/builds/haxe/mac/haxe_latest.tar.gz",
+                    "linux": "http://hxbuilds.s3-website-us-east-1.amazonaws.com/builds/haxe/linux64/haxe_latest.tar.gz"
+                }
+            },
+            "exportVariables": {
+                "HAXE_PATH": ".",
+                "HAXE_STD_PATH": "./std",
+                "HAXELIB_PATH": "../haxelib"
+            },
+            "exportPath": ["."]
+        }
+    }
+    package = Package()
+    package.name = packageName
+
+    packageInfo = packages[packageName]
+    package.exportVars = packageInfo["exportVariables"]
+    package.exportPaths = packageInfo["exportPath"]
+
+    packageUrls = packageInfo["urls"]
+
+    if packageUrls != None:
+        versionUrls = packageUrls.get(version)
+        if versionUrls == None:
+            package.url = packageUrls["version"][platformName].format(
+                version=version)
+        else:
+            package.url = versionUrls[platformName]
+
+    if package.url != None:
+        package.packageFile = package.url.split("/")[-1]
+        package.packageDir = package.packageFile.replace(
+            ".zip", "").replace(".tar.gz", "")
+    else:
+        return None
+    return package
+
+
 def splitArgs():
     if "--cmd" in sys.argv:
         i = sys.argv.index("--cmd")
@@ -18,25 +91,24 @@ def splitArgs():
         return (sys.argv, [])
 
 
-def detectPlatform():
-    p = platform.system()
-    if p == "Linux":
+class PlatformHelper ():
+    def __init__(self):
         (arch, _) = platform.architecture()
-        if arch == "64bit":
-            return "linux64"
-        else:
-            return "linux32"
-    elif p == "Darwin":
-        return "osx"
-    elif p == "Windows":
-        return "win"
-    return "win"
+        self.is_64bit = (arch == "64bit")
+        platforms = {"Linux": "linux", "Darwin": "osx", "Windows": "win"}
+        self.platformName = platforms[platform.system()]
+        self.is_linux = self.platformName == "linux"
+        self.is_win = self.platformName == "win"
+        self.is_osx = self.platformName == "osx"
+
+
+platformHelper = PlatformHelper()
 
 
 def parseArgs(argsEnv):
     parser = argparse.ArgumentParser(description='HandyHaxe: Instant environment for haxe development.',
-    formatter_class=argparse.RawDescriptionHelpFormatter,
-    epilog=textwrap.dedent('''
+                                     formatter_class=argparse.RawDescriptionHelpFormatter,
+                                     epilog=textwrap.dedent('''
 Sample usages:\n
     python handyhaxe.py --verbose --haxe-version=latest --cmd haxe -version    
     python handyhaxe.py --verbose --cmd haxe -version    
@@ -46,10 +118,12 @@ Sample usages:\n
     '''))
     parser.add_argument('command', metavar='CMD', nargs='*',
                         help='Command to execute in configured environment.')
-    parser.add_argument('-haxe', '--haxe-version', help='Haxe version (x.x.x|latest)', default="3.4.2")
-    parser.add_argument('--neko-version', help='Neko version (x.x.x|auto)', default="auto")
-    parser.add_argument('--platform', default=detectPlatform(),
-                        help="Platform (win|osx|linux64|linux32)")
+    parser.add_argument('-haxe', '--haxe-version',
+                        help='Haxe version (x.x.x|latest)', default="3.4.3")
+    parser.add_argument(
+        '--neko-version', help='Neko version (x.x.x|auto)', default="auto")
+    parser.add_argument('--platform', default=platformHelper.platformName,
+                        help="Platform (win|osx|linux) 64 bit only.")
     parser.add_argument('-i', '--install', action='store_true',
                         default=False, help='Install haxe local')
     parser.add_argument('--install-path', default=".hh",
@@ -65,70 +139,7 @@ Sample usages:\n
     return parser.parse_args(argsEnv)
 
 
-def installPackage(package, e):
-    url = package.url
-    if not os.path.exists(e.install_path):
-        os.makedirs(e.install_path)
-    fileName = os.path.normpath(e.install_path + "/" + package.fileName)
-    dirName = os.path.normpath(e.install_path + "/" + package. dirName)
-    fileExist = os.path.isfile(fileName)
-    logging.info("{0} -> {1} - [{2}]".format(url, fileName,
-                                             "CACHED" if fileExist else "DOWNLOAD"))
-    if not fileExist:
-        if sys.version_info[0] < 3:
-            import urllib
-            urllib.urlretrieve(url, fileName)
-        else:
-            import urllib.request
-            urllib.request.urlretrieve(url, fileName)
-
-    if not os.path.exists(dirName):
-        logging.debug("Exracting to {}..".format(dirName))
-        os.makedirs(dirName)
-        if fileName.endswith(".zip"):
-            import zipfile
-            with zipfile.ZipFile(fileName, "r") as a:
-                a.extractall(dirName)
-        if fileName.endswith(".tar.gz"):
-            import tarfile
-            with tarfile.open(fileName) as a:
-                a.extractall(dirName)
-        # Strip empty dir level
-        ld = os.listdir(dirName)
-        if len(ld) == 1:
-            tmpDir = dirName + ".tmp"
-            os.rename(dirName, tmpDir)
-            os.rename(os.path.normpath(tmpDir + "/" + ld[0]), dirName)
-            os.rmdir(tmpDir)
-    # Collect Paths
-    for packagePath in package.exportPaths:
-        p = os.path.abspath(os.path.normpath(dirName + "/" + packagePath))
-        e.path.append(p)
-    # Collect variables
-    for (varName, p) in package.exportVars.items():
-        ap = os.path.abspath(os.path.normpath(dirName + "/" + p))
-        e.env[varName] = ap
-        if not os.path.exists(ap):
-            os.makedirs(ap)
-
-
-class Package():
-    def __init__(self, name, url, fileName, dirName, exportVars, exportPaths):
-        self.name = name
-        self.url = url
-        self.fileName = fileName
-        self.dirName = dirName
-        self.exportVars = exportVars
-        self.exportPaths = exportPaths
-
-    def replace(self, params):
-        if params != None:
-            self.url = self.url.format(**params)
-            self.fileName = self.fileName.format(**params)
-            self.dirName = self.dirName.format(**params)
-
-
-class EvnExport:
+class EnvironmentExport:
     def __init__(self, install_path):
         self.env = {}
         self.path = []
@@ -148,19 +159,17 @@ class App:
     installed = False
     packages = []
 
-    def __init__(self, packages):
-        self.packages = packages
+    def __init__(self):
         (argsEnv, argsCmd) = splitArgs()
         self.argsEnv = argsEnv
         self.argsCmd = argsCmd
         self.args = parseArgs(self.argsEnv)
         if not self.args.verbose:
             logging.disable(logging.INFO)
-        logging.info ("Python version: {}".format(sys.version_info))
+        logging.info("Python version: {}".format(sys.version_info))
         logging.info("ARGS: {}".format(self.args))
 
-        self.e = EvnExport(self.args.install_path)
-        #self.e = EvnExport({}, args.install_path)
+        self.e = EnvironmentExport(self.args.install_path)
 
         if self.args.neko_version == "auto":
             v = self.args.haxe_version
@@ -170,35 +179,18 @@ class App:
                 self.args.neko_version = "2.0.0"
             else:
                 self.args.neko_version = "2.1.0"
-        
-        def filterPackages(toInstall):
-            self.packages = [p for p in self.packages if p.name in toInstall]
-        if self.args.haxe_version =="latest":
-            filterPackages(["haxe-latest", "neko"])
-        else:
-            filterPackages(["haxe", "neko"])
 
-        platform2 = self.args.platform
-        if platform2 == "win":
-            platform2 = "windows"
-        elif platform2 == "osx":
-            platform2 = "mac"
-
-        self.params = {
-            "haxe_version": self.args.haxe_version,
-            "neko_version": self.args.neko_version,
-            "platform": self.args.platform,
-            "platform2": platform2 ,
-            "extension": "zip" if self.args.platform == "win" else "tar.gz"
-        }
+        self.packages = [
+            getPackageInfo("haxe", self.args.haxe_version, self.args.platform),
+            getPackageInfo("neko", self.args.neko_version, self.args.platform)
+        ]
 
     def stepInstall(self):
         if self.installed:
             return
         self.installed = True
         for p in self.packages:
-            p.replace(self.params)
-            installPackage(p, self.e)
+            self.installPackage(p)
 
     def stepCommand(self):
         self.stepInstall()
@@ -220,58 +212,57 @@ class App:
         if self.args.cmd:
             self.stepCommand()
 
-#-----------------------------------------------------------------------------
+    def installPackage(self, package):
+        e = self.e
+        url = package.url
+        if not os.path.exists(e.install_path):
+            os.makedirs(e.install_path)
+        packageFile = os.path.normpath(
+            e.install_path + "/" + package.packageFile)
+        packageDir = os.path.normpath(
+            e.install_path + "/" + package.packageDir)
+        fileExist = os.path.isfile(packageFile)
+        logging.info("{0} -> {1} - [{2}]".format(url, packageFile,
+                                                 "CACHED" if fileExist else "DOWNLOAD"))
+        if not fileExist:
+            if sys.version_info[0] < 3:
+                import urllib
+                urllib.urlretrieve(url, packageFile)
+            else:
+                import urllib.request
+                urllib.request.urlretrieve(url, packageFile)
 
-
-packages = []
-
-# Neko
-packages.append(
-    Package(
-        "neko",
-        "http://nekovm.org/media/neko-{neko_version}-{platform}.{extension}",
-        "neko-{neko_version}-{platform}.{extension}",
-        "neko-{neko_version}-{platform}",
-        {
-            "NEKO_PATH": ".",
-            "LD_LIBRARY_PATH": "."
-        },
-        ["."]
-    )
-)
-
-# Haxe
-packages.append(
-    Package(
-        "haxe",
-        "https://github.com/HaxeFoundation/haxe/releases/download/{haxe_version}/haxe-{haxe_version}-{platform}.{extension}",
-        "haxe-{haxe_version}-{platform}.{extension}",
-        "haxe-{haxe_version}-{platform}",
-        {
-            "HAXE_PATH": ".",
-            "HAXE_STD_PATH": "./std",
-            "HAXELIB_PATH": "../haxelib"
-        },
-        ["."]
-    )
-)
-
-# Haxe Nightly Builds 
-packages.append(
-    Package(
-        "haxe-latest",
-        "http://hxbuilds.s3-website-us-east-1.amazonaws.com/builds/haxe/{platform2}/haxe_latest.{extension}",
-        "haxe-latest-{platform2}.{extension}",
-        "haxe-latest-{platform2}",
-        {
-            "HAXE_PATH": ".",
-            "HAXE_STD_PATH": "./std",
-            "HAXELIB_PATH": "../haxelib"
-        },
-        ["."]
-    )
-)
+        if not os.path.exists(packageDir):
+            logging.debug("Exracting to {}..".format(packageDir))
+            os.makedirs(packageDir)
+            if packageFile.endswith(".zip"):
+                import zipfile
+                with zipfile.ZipFile(packageFile, "r") as a:
+                    a.extractall(packageDir)
+            if packageFile.endswith(".tar.gz"):
+                import tarfile
+                with tarfile.open(packageFile) as a:
+                    a.extractall(packageDir)
+            # Strip empty dir level
+            ld = os.listdir(packageDir)
+            if len(ld) == 1:
+                tmpDir = packageDir + ".tmp"
+                os.rename(packageDir, tmpDir)
+                os.rename(os.path.normpath(tmpDir + "/" + ld[0]), packageDir)
+                os.rmdir(tmpDir)
+        # Collect Paths
+        for packagePath in package.exportPaths:
+            p = os.path.abspath(os.path.normpath(
+                packageDir + "/" + packagePath))
+            e.path.append(p)
+        # Collect variables
+        for (varName, p) in package.exportVars.items():
+            ap = os.path.abspath(os.path.normpath(packageDir + "/" + p))
+            e.env[varName] = ap
+            if not os.path.exists(ap):
+                os.makedirs(ap)
 
 #-----------------------------------------------------------------------------
 
-App(packages).run()
+
+App().run()

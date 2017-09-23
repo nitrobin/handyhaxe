@@ -20,4 +20,4 @@ Just wrap you commands in handyhaxe.py and it will run in automatically configur
     python handyhaxe.py --cmd neko out.n
 
 ## Notes
-Must works on Windows/Linux. Mac not tested yet.
+Must works on Windows/Linux/Mac. 
