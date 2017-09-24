@@ -1,0 +1,12 @@
+language: python
+python:
+  - "2.7"
+  - "3.6"
+env:
+  - HAXE_VERSION=3.2.0
+  - HAXE_VERSION=3.4.3
+  - HAXE_VERSION=latest
+script:
+  - python handyhaxe.py --verbose --haxe-version=$HAXE_VERSION --cmd haxe -version  
+  - python handyhaxe.py --haxe-version=$HAXE_VERSION --cmd haxe -main HelloWorld -neko out.n
+  - python handyhaxe.py --haxe-version=$HAXE_VERSION --cmd neko out.n
