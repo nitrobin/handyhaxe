@@ -13,7 +13,7 @@ environment:
 build: off
 test_script:
 - ps: >-
-    & C:\\Python${env:PYTHON_VERSION}\\python.exe handyhaxe.py --haxe-version=${env:HAXE_VERSION} --cmd haxe -version
-    & C:\\Python${env:PYTHON_VERSION}\\python.exe handyhaxe.py --haxe-version=${env:HAXE_VERSION} --cmd haxe -main HelloWorld -neko out.n
-    & C:\\Python${env:PYTHON_VERSION}\\python.exe handyhaxe.py --haxe-version=${env:HAXE_VERSION} --cmd neko out.n
+    C:\\Python${env:PYTHON_VERSION}\\python.exe handyhaxe.py --haxe-version=${env:HAXE_VERSION} --cmd haxe -version
+    C:\\Python${env:PYTHON_VERSION}\\python.exe handyhaxe.py --haxe-version=${env:HAXE_VERSION} --cmd haxe -main HelloWorld -neko out.n
+    C:\\Python${env:PYTHON_VERSION}\\python.exe handyhaxe.py --haxe-version=${env:HAXE_VERSION} --cmd neko out.n
    
