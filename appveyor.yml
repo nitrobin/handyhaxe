@@ -12,9 +12,8 @@ environment:
     PYTHON_VERSION: 36
 build: off
 test_script:
-- ps: >-
-    $env:path="$env:Path;C:\\Python${env:PYTHON_VERSION}"
-    python handyhaxe.py --haxe-version=${env:HAXE_VERSION} --cmd haxe -version
-    python handyhaxe.py --haxe-version=${env:HAXE_VERSION} --cmd haxe -main HelloWorld -neko out.n
-    python handyhaxe.py --haxe-version=${env:HAXE_VERSION} --cmd neko out.n
+  - "SET PATH=C:\\Python%PYTHON_VERSION%;%PATH%"    
+  - "python handyhaxe.py --haxe-version=%HAXE_VERSION% --cmd haxe -version"
+  - "python handyhaxe.py --haxe-version=%HAXE_VERSION% --cmd haxe -main HelloWorld -neko out.n"
+  - "python handyhaxe.py --haxe-version=%HAXE_VERSION% --cmd neko out.n"
    
