@@ -1,4 +1,5 @@
 # handyhaxe
+[![Build Status](https://travis-ci.org/nitrobin/handyhaxe.svg?branch=master)](https://travis-ci.org/nitrobin/handyhaxe)
 ## What is it?
 
 With this script you can quickly start development with haxe anywhere and anytime.
