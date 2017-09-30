@@ -182,7 +182,7 @@ Sample usages:\n
                         default=False, help='Install haxe local')
     parser.add_argument('--install-path', default=".hh",
                         help='Path to store local files')
-    parser.add_argument('-e', '--export-env', default=None if platformHelper.platformName == "win" else "bash",
+    parser.add_argument('-e', '--export-env', default=None,
                         help='Print environment variables script to stdout. Format (cmd|bash)')
     parser.add_argument('--cmd', default=False,
                         action="store_true", help='Run cmd')
@@ -238,7 +238,7 @@ class App:
             )
 
     def run(self):
-        if self.args.export_env:
+        if self.args.export_env != None:
             self.stepInstall()
             self.stepExportEnv()
             sys.exit(0)
