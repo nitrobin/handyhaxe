@@ -37,10 +37,11 @@ Create python script with custom environment settings and preinstalled libraries
 # make-helloworld.py
 import handyhaxe
 
-handyhaxe.make_env("", [
-        "haxelib install format",
-        "haxelib list ",
-        "haxe -x HelloWorld"
+handyhaxe.make_env("-haxe=3.4.3 -v", [
+    "haxelib install format",
+    "haxelib list",
+    "haxe -neko HelloWorld.n -main HelloWorld",
+    "neko HelloWorld.n"
 ])
 ```
 

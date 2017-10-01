@@ -7,8 +7,9 @@ if __name__ == '__main__' and __package__ is None:
 
 import handyhaxe
 
-handyhaxe.make_env("-haxe=3.4.3", [
-        "haxelib install format",
-        "haxelib list ",
-        "haxe -x HelloWorld"
+handyhaxe.make_env("-haxe=latest -v", [
+    "haxelib install format",
+    "haxelib list",
+    "haxe -neko HelloWorld.n -main HelloWorld",
+    "neko HelloWorld.n"
 ])
