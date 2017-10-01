@@ -324,6 +324,9 @@ class App:
 logging.basicConfig(level=logging.DEBUG, format='%(levelname)s - %(message)s')
 
 def make_env(appArgv, commands):
+    if isinstance(appArgv, str):
+        appArgv = appArgv.split(" ")
+    appArgv = ["handyhaxe.py"] + appArgv
     App(appArgv, commands).run()
 
 if __name__ == "__main__":

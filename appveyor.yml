@@ -14,6 +14,6 @@ build: off
 test_script:
   - "SET PATH=C:\\Python%PYTHON_VERSION%;%PATH%"    
   - "python handyhaxe.py --haxe-version=%HAXE_VERSION% --cmd haxe -version"
-  - "python handyhaxe.py --haxe-version=%HAXE_VERSION% --cmd haxe -main HelloWorld -neko out.n"
-  - "python handyhaxe.py --haxe-version=%HAXE_VERSION% --cmd neko out.n"
+  - "python handyhaxe.py --haxe-version=%HAXE_VERSION% --cmd haxe --cwd samples -main HelloWorld -neko out.n"
+  - "python handyhaxe.py --haxe-version=%HAXE_VERSION% --cmd neko samples/out.n"
    
