@@ -9,8 +9,7 @@ import textwrap
 import zipfile
 import tarfile
 
-
-logging.basicConfig(level=logging.DEBUG, format='%(levelname)s - %(message)s')
+#-----------------------------------------------------------------------------
 
 class Package():
     def __init__(self):
@@ -20,20 +19,6 @@ class Package():
         self.packageDir = ""
         self.exportVars = {}
         self.exportPaths = []
-
-
-
-class PlatformHelper ():
-    def __init__(self):
-        (arch, _) = platform.architecture()
-        self.is_64bit = (arch == "64bit")
-        platforms = {"Linux": "linux", "Darwin": "osx", "Windows": "win"}
-        self.platformName = platforms[platform.system()]
-        self.is_linux = self.platformName == "linux"
-        self.is_win = self.platformName == "win"
-        self.is_osx = self.platformName == "osx"
-
-platformHelper = PlatformHelper()
 
 
 class EnvironmentExport:
@@ -76,9 +61,9 @@ def getPackageInfo(packageName, version, platformName):
                     "linux": "https://github.com/HaxeFoundation/haxe/releases/download/{version}/haxe-{version}-linux64.tar.gz"
                 },
                 "latest": {
-                    "win":   "http://hxbuilds.s3-website-us-east-1.amazonaws.com/builds/haxe/windows/haxe_latest.zip",
-                    "osx":   "http://hxbuilds.s3-website-us-east-1.amazonaws.com/builds/haxe/mac/haxe_latest.tar.gz",
-                    "linux": "http://hxbuilds.s3-website-us-east-1.amazonaws.com/builds/haxe/linux64/haxe_latest.tar.gz"
+                    "win":   "http://hxbuilds.s3-website-us-east-1.amazonaws.com/builds/haxe/windows/haxe_latest.zip#/haxe-latest-win.zip",
+                    "osx":   "http://hxbuilds.s3-website-us-east-1.amazonaws.com/builds/haxe/mac/haxe_latest.tar.gz#/haxe-latest-osx.tar.gz",
+                    "linux": "http://hxbuilds.s3-website-us-east-1.amazonaws.com/builds/haxe/linux64/haxe_latest.tar.gz#/haxe-latest-linux64.tar.gz"
                 }
             },
             "exportVariables": {
@@ -91,13 +76,13 @@ def getPackageInfo(packageName, version, platformName):
         "vscode": {
             "urls": {
                 "stable": {
-                    "win": "https://go.microsoft.com/fwlink/?Linkid=850641#/vscode-stable-win.zip",
-                    "osx": "https://go.microsoft.com/fwlink/?LinkID=620882#/vscode-stable-osx.zip",
-                    "linux": " https://go.microsoft.com/fwlink/?LinkID=620884#/vscode-stable-linux64.tar.gz",
+                    "win":   "https://go.microsoft.com/fwlink/?Linkid=850641#/vscode-stable-win.zip",
+                    "osx":   "https://go.microsoft.com/fwlink/?LinkID=620882#/vscode-stable-osx.zip",
+                    "linux": "https://go.microsoft.com/fwlink/?LinkID=620884#/vscode-stable-linux64.tar.gz",
                 },
                 "insider": {
-                    "win": "https://go.microsoft.com/fwlink/?Linkid=850640#/vscode-insider-win.zip",
-                    "osx": "https://go.microsoft.com/fwlink/?LinkId=723966#/vscode-insider-osx.zip",
+                    "win":   "https://go.microsoft.com/fwlink/?Linkid=850640#/vscode-insider-win.zip",
+                    "osx":   "https://go.microsoft.com/fwlink/?LinkId=723966#/vscode-insider-osx.zip",
                     "linux": "https://go.microsoft.com/fwlink/?LinkId=723968#/vscode-insider-linux64.tar.gz"
                 }
             },
@@ -128,8 +113,10 @@ def getPackageInfo(packageName, version, platformName):
         package.packageDir = package.packageFile.replace(".zip", "").replace(".tar.gz", "")
     else:
         return None
+    package.url = package.url.split("#")[0]
     return package
 
+#-----------------------------------------------------------------------------
 
 def urlretrieve(url, packageFile):
     if sys.version_info[0] < 3:
@@ -156,43 +143,7 @@ def extractall(packageFile, packageDir):
         os.rename(os.path.normpath(tmpDir + "/" + ld[0]), packageDir)
         os.rmdir(tmpDir)
 
-
-def parseArgs(argsEnv):
-    parser = argparse.ArgumentParser(description='HandyHaxe: Instant environment for haxe development.',
-                                     formatter_class=argparse.RawDescriptionHelpFormatter,
-                                     epilog=textwrap.dedent('''
-Sample usages:\n
-    python handyhaxe.py --verbose --haxe-version=latest --cmd haxe -version    
-    python handyhaxe.py --verbose --cmd haxe -version    
-    python handyhaxe.py --cmd haxelib list
-    python handyhaxe.py --cmd haxe -main HelloWorld -neko out.n
-    python handyhaxe.py --cmd neko out.n
-    '''))
-    parser.add_argument('command', metavar='CMD', nargs='*',
-                        help='Command to execute in configured environment.')
-    parser.add_argument('-haxe', '--haxe-version',
-                        help='Haxe version (x.x.x|latest)', default="3.4.3")
-    parser.add_argument(
-        '--neko-version', help='Neko version (x.x.x|auto)', default="auto")
-    parser.add_argument('-vscode', '--vscode-version',
-                        help='VSCode version (stable|insider)', default=None)
-    parser.add_argument('--platform', default=platformHelper.platformName,
-                        help="Platform (win|osx|linux) 64 bit only.")
-    parser.add_argument('-i', '--install', action='store_true',
-                        default=False, help='Install haxe local')
-    parser.add_argument('--install-path', default=".hh",
-                        help='Path to store local files')
-    parser.add_argument('-e', '--export-env', default=None,
-                        help='Print environment variables script to stdout. Format (cmd|bash)')
-    parser.add_argument('--cmd', default=False,
-                        action="store_true", help='Run cmd')
-    parser.add_argument('-v', '--verbose', default=False,
-                        action="store_true", help='Verbose mode')
-
-    if len(sys.argv) < 2:
-        parser.print_help()
-
-    return parser.parse_args(argsEnv)
+#-----------------------------------------------------------------------------
 
 
 
@@ -200,17 +151,27 @@ class App:
     installed = False
     packages = []
 
-    def __init__(self):
+    def __init__(self, appArgv=None, commands = []):
+        # platform
+        (arch, _) = platform.architecture()
+        self.is_64bit = (arch == "64bit")
+        platforms = {"Linux": "linux", "Darwin": "osx", "Windows": "win"}
+        self.platformName = platforms[platform.system()]
+        self.is_linux = self.platformName == "linux"
+        self.is_win = self.platformName == "win"
+        self.is_osx = self.platformName == "osx"
+
         # split args
-        self.argsEnv = sys.argv
-        self.argsCmd = []
-        if "--cmd" in self.argsEnv:
-            i = self.argsEnv.index("--cmd")
-            self.argsEnv, self.argsCmd = self.argsEnv[:i + 1], self.argsEnv[i + 1:]
-
+        appArgv = appArgv if appArgv != None else sys.argv
+        self.appArgv = appArgv
+        self.commands = commands
+        if "--cmd" in self.appArgv:
+            i = self.appArgv.index("--cmd")
+            self.appArgv = appArgv[:i + 1]
+            self.commands = self.commands + [appArgv[i + 1:]]
+            
         # parse
-        self.args = parseArgs(self.argsEnv)
-
+        self.args = self.parseArgs(self.appArgv, self.platformName)
         # debug info
         if not self.args.verbose:
             logging.disable(logging.INFO)
@@ -227,7 +188,7 @@ class App:
                 self.args.neko_version = "2.0.0"
             else:
                 self.args.neko_version = "2.1.0"
-
+        # add packages
         self.packages = [
             getPackageInfo("haxe", self.args.haxe_version, self.args.platform),
             getPackageInfo("neko", self.args.neko_version, self.args.platform)
@@ -236,6 +197,45 @@ class App:
             self.packages.append(
                 getPackageInfo("vscode", self.args.vscode_version, self.args.platform)
             )
+
+
+    def parseArgs(self, appArgv, defaultPlatform):
+        parser = argparse.ArgumentParser(description='HandyHaxe: Instant environment for haxe development.',
+                                        formatter_class=argparse.RawDescriptionHelpFormatter,
+                                        epilog=textwrap.dedent('''
+        Sample usages:\n
+            python handyhaxe.py --verbose --haxe-version=latest --cmd haxe -version    
+            python handyhaxe.py --verbose --cmd haxe -version    
+            python handyhaxe.py --cmd haxelib list
+            python handyhaxe.py --cmd haxe -main HelloWorld -neko out.n
+            python handyhaxe.py --cmd neko out.n
+        '''))
+        parser.add_argument('command', metavar='CMD', nargs='*',
+                            help='Command to execute in configured environment.')
+        parser.add_argument('-haxe', '--haxe-version',
+                            help='Haxe version (x.x.x|latest)', default="3.4.3")
+        parser.add_argument(
+            '--neko-version', help='Neko version (x.x.x|auto)', default="auto")
+        parser.add_argument('-vscode', '--vscode-version',
+                            help='VSCode version (stable|insider)', default=None)
+        parser.add_argument('--platform', default=defaultPlatform,
+                            help="Platform (win|osx|linux) 64 bit only.")
+        parser.add_argument('-i', '--install', action='store_true',
+                            default=False, help='Install haxe local')
+        parser.add_argument('--install-path', default=".hh",
+                            help='Path to store local files')
+        parser.add_argument('-e', '--export-env', default=None,
+                            help='Print environment variables script to stdout. Format (cmd|bash)')
+        parser.add_argument('--cmd', default=False,
+                            action="store_true", help='Run cmd')
+        parser.add_argument('-v', '--verbose', default=False,
+                            action="store_true", help='Verbose mode')
+
+        if len(sys.argv) < 2:
+            parser.print_help()
+
+        return parser.parse_args(appArgv)
+
 
     def run(self):
         if self.args.export_env != None:
@@ -251,26 +251,21 @@ class App:
 
     def stepCommand(self):
         self.stepInstall()
-        shortEnv = "\n".join(map(lambda i: "    {} : {}".format(
-            *i), self.e.createFinalEnv().items()))
-        logging.info("Packages ENV:\n{}".format(shortEnv))
+        shortEnv = "\n".join(map(lambda i: "    {} : {}".format(*i), self.e.createFinalEnv().items()))
+        logging.info("Environment variables from packages:\n{}".format(shortEnv))
 
         fullEnv = self.e.createFinalEnv(os.environ.copy())
         os.environ["PATH"] = fullEnv["PATH"]
 
-        def doCmd(argsCmd):
-            if isinstance(argsCmd, str):
-                argsCmd = argsCmd.split(" ")
-            logging.info("CMD: {}".format(argsCmd))
-            p = subprocess.Popen(argsCmd, env=fullEnv, stdin=sys.stdin,
+        for command in self.commands:
+            if isinstance(command, str):
+                command = command.split(" ")
+            logging.info("command: {}".format(command))
+            p = subprocess.Popen(command, env=fullEnv, stdin=sys.stdin,
                                  stdout=sys.stdout, stderr=sys.stderr)
             p.wait()
             if p.returncode != 0:
                 sys.exit(p.returncode)
-        if os.path.exists('handyhaxe-config.py'):
-            logging.info("handyhaxe-config.py")
-            execfile('handyhaxe-config.py')
-        doCmd(self.argsCmd)
 
 
     def stepExportEnv(self):
@@ -284,7 +279,7 @@ class App:
                 if k == "PATH":
                     v = os.pathsep.join([v, "${PATH}"])
                 lines.append('export ${}="{}"'.format(k, repr(v)[1:-1]))
-        lines.append(" ".join(self.argsCmd))
+        lines.append(" ".join(self.commands))
         print('\n'.join(lines))
 
 
@@ -300,13 +295,10 @@ class App:
         url = package.url
         if not os.path.exists(e.install_path):
             os.makedirs(e.install_path)
-        packageFile = os.path.normpath(
-            e.install_path + "/" + package.packageFile)
-        packageDir = os.path.normpath(
-            e.install_path + "/" + package.packageDir)
+        packageFile = os.path.normpath(e.install_path + "/" + package.packageFile)
+        packageDir = os.path.normpath(e.install_path + "/" + package.packageDir)
         fileExist = os.path.isfile(packageFile)
-        logging.info("{0} -> {1} - [{2}]".format(url,
-                                                 packageFile, "CACHED" if fileExist else "DOWNLOAD"))
+        logging.info("{0} -> {1} - [{2}]".format(url, packageFile, "EXIST" if fileExist else "DOWNLOAD"))
         if not fileExist:
             urlretrieve(url, packageFile)
 
@@ -327,6 +319,10 @@ class App:
                 os.makedirs(ap)
 
 #-----------------------------------------------------------------------------
+logging.basicConfig(level=logging.DEBUG, format='%(levelname)s - %(message)s')
 
+def make_env(appArgv, commands):
+    App(appArgv, commands).run()
 
-App().run()
+if __name__ == "__main__":
+    App().run()
