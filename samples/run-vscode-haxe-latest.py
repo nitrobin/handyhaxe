@@ -4,11 +4,14 @@ if __name__ == '__main__' and __package__ is None:
     from os import sys, path
     sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 
-
 import handyhaxe
+import sys
 
-handyhaxe.make_env("-haxe=3.4.3", [
-        "haxelib install format",
-        "haxelib list ",
-        "haxe -x HelloWorld"
+handyhaxe.make_env("-v -haxe=latest -vscode=stable", [
+#    "haxelib install format",
+#    "code --install-extension nadako.vshaxe",
+#    "code --uninstall-extension vshaxe.haxe-extension-pack",
+#    "code --install-extension vshaxe.haxe-extension-pack",
+    "code ."
 ])
+

@@ -1,8 +1,13 @@
+#!/usr/bin/env python
 #https://stackoverflow.com/questions/11536764/how-to-fix-attempted-relative-import-in-non-package-even-with-init-py
+if __name__ == '__main__' and __package__ is None:
+    from os import sys, path
+    sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
+
 import handyhaxe
 import sys
 
-handyhaxe.make_env("-haxe=3.4.3 -v",[
+handyhaxe.make_env("",[
     "haxelib install format",
     "haxelib list ",
     ["haxe"] + sys.argv[1:]

@@ -320,6 +320,9 @@ class App:
         fileExist = os.path.isfile(packageFile)
         logging.info("{0} -> {1} - [{2}]".format(url, packageFile, "EXIST" if fileExist else "DOWNLOAD"))
         if not fileExist:
+            af = os.path.abspath(os.path.normpath(packageFile))            
+            if not os.path.exists(os.path.dirname(af)):
+                os.makedirs(os.path.dirname(af))
             urlretrieve(url, packageFile)
 
         if not os.path.exists(packageDir):

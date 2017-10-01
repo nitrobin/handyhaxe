@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 #https://stackoverflow.com/questions/11536764/how-to-fix-attempted-relative-import-in-non-package-even-with-init-py
 if __name__ == '__main__' and __package__ is None:
     from os import sys, path
