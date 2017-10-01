@@ -177,7 +177,7 @@ class App:
         # debug info
         if not self.args.verbose:
             logging.disable(logging.INFO)
-        logging.info("Python version: {}".format(sys.version_info))
+        logging.info("Python version: {}".format(platform.python_version()))
         logging.info("ARGS: {}".format(self.args))
 
         self.e = EnvironmentExport(self.args.install_path)
@@ -226,23 +226,26 @@ class App:
                             default=False, help='Install haxe local')
         parser.add_argument('--install-path', default=".hh",
                             help='Path to store local files')
-        parser.add_argument('-e', '--export-env', default=None,
-                            help='Print environment variables script to stdout. Format (cmd|bash)')
+        parser.add_argument('-o', '--output', default=None,
+                            help='Output file name')
+        parser.add_argument('-e', '--export', default=None,
+                            help='Print environment variables script to stdout or to output file. Format (cmd|bash)')
         parser.add_argument('--cmd', default=False,
                             action="store_true", help='Run cmd')
         parser.add_argument('-v', '--verbose', default=False,
                             action="store_true", help='Verbose mode')
+        parser.add_argument('--cwd', default=None, help='Change working directory')
 
-        if len(sys.argv) < 2:
+        if len(appArgv) < 2:
             parser.print_help()
 
         return parser.parse_args(appArgv)
 
 
     def run(self):
-        if self.args.export_env != None:
+        if self.args.export != None:
             self.stepInstall()
-            self.stepExportEnv()
+            self.stepExport()
             sys.exit(0)
 
         if self.args.install:
@@ -253,8 +256,8 @@ class App:
 
     def stepCommand(self):
         self.stepInstall()
-        shortEnv = "\n".join(map(lambda i: "    {} : {}".format(*i), self.e.createFinalEnv().items()))
-        logging.info("Environment variables from packages:\n{}".format(shortEnv))
+        shortEnv = "\n".join(map(lambda i: '  {}:"{}"'.format(*i), self.e.createFinalEnv().items()))
+        logging.info("Environment variables:\n{}".format(shortEnv))
 
         fullEnv = self.e.createFinalEnv(os.environ.copy())
         os.environ["PATH"] = fullEnv["PATH"]
@@ -264,25 +267,40 @@ class App:
                 command = command.split(" ")
             logging.info("command: {}".format(command))
             p = subprocess.Popen(command, env=fullEnv, stdin=sys.stdin,
-                                 stdout=sys.stdout, stderr=sys.stderr)
+                                 stdout=sys.stdout, stderr=sys.stderr,cwd=self.args.cwd)
             p.wait()
             if p.returncode != 0:
                 sys.exit(p.returncode)
 
 
-    def stepExportEnv(self):
+    def stepExport(self):
+        format = self.args.export
         lines = []
+        PATH_VAR = "${PATH%}"
+        KV_FORMAT = '{}:"{}"'
+        if format == "cmd":
+            PATH_VAR = "%PATH%"
+            KV_FORMAT = 'set {}="{}"'
+        if format == "bash":
+            PATH_VAR = "${PATH}"
+            KV_FORMAT = 'export {}="{}"'
         for (k, v) in self.e.createFinalEnv().items():
-            if self.args.export_env == "cmd":
-                if k == "PATH":
-                    v = os.pathsep.join([v, "%PATH%"])
-                lines.append('set {}="{}"'.format(k, repr(v)[1:-1]))
-            if self.args.export_env == "bash":
-                if k == "PATH":
-                    v = os.pathsep.join([v, "${PATH}"])
-                lines.append('export ${}="{}"'.format(k, repr(v)[1:-1]))
-        lines.append(" ".join(self.commands))
-        print('\n'.join(lines))
+            if k == "PATH":
+                v = os.pathsep.join([v, PATH_VAR])
+            lines.append(KV_FORMAT.format(k, repr(v)[1:-1]))
+            
+        for cmd in self.commands:
+            lines.append(" ".join(cmd))
+        envs = '\n'.join(lines) + "\n"
+        output = self.args.output
+        if output == None:
+             print(envs)
+        else:
+            output = os.path.abspath(os.path.normpath(output))            
+            if not os.path.exists(os.path.dirname(output)):
+                os.makedirs(os.path.dirname(output))
+            with open(output, 'w') as out:
+                out.write(envs)
 
 
     def stepInstall(self):

@@ -18,8 +18,31 @@ Just wrap you commands in handyhaxe.py and it will run in automatically configur
     python handyhaxe.py --verbose --haxe-version=latest --cmd haxe -version    
     python handyhaxe.py --verbose --cmd haxe -version    
     python handyhaxe.py --cmd haxelib list
-    python handyhaxe.py --cmd haxe -main HelloWorld -neko out.n
-    python handyhaxe.py --cmd neko out.n
+    python handyhaxe.py --cwd samples --cmd haxe -x HelloWorld
+    python handyhaxe.py --cwd samples --cmd haxe -main HelloWorld -neko out.n
+    python handyhaxe.py --cwd samples --cmd neko out.n
+
+## Make wrapper for specific haxe version
+
+    python handyhaxe.py -haxe=latest -e=bash -o=haxe-latest-runner.sh --cmd haxe \"\$@\" \
+        && chmod a+x haxe-latest-runner.sh 
+    ./haxe-latest-runner.sh -version
+    ./haxe-latest-runner.sh --cwd samples -x HelloWorld
+
+## Customize environment 
+
+Create python script with custom environment settings and preinstalled libraries
+
+```python
+# make-helloworld.py
+import handyhaxe
+
+handyhaxe.make_env("", [
+        "haxelib install format",
+        "haxelib list ",
+        "haxe -x HelloWorld"
+])
+```
 
 ## Notes
 Must works on Windows/Linux/Mac. 

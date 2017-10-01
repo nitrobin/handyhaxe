@@ -3,11 +3,11 @@ if __name__ == '__main__' and __package__ is None:
     from os import sys, path
     sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 
-import handyhaxe
-import sys
 
-handyhaxe.make_env("-haxe=latest",[
-    "haxelib install format",
-    "haxelib list ",
-    ["haxe"] + sys.argv[1:]
+import handyhaxe
+
+handyhaxe.make_env("-haxe=3.4.3", [
+        "haxelib install format",
+        "haxelib list ",
+        "haxe -x HelloWorld"
 ])
