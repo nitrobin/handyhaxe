@@ -102,9 +102,8 @@ def getPackageInfo(packageName, version, platformName):
 
     if packageUrls != None:
         versionUrls = packageUrls.get(version)
-        if versionUrls == None:
-            package.url = packageUrls["{version}"][platformName].format(
-                version=version)
+        if versionUrls == None and packageUrls["{version}"] != None:
+            package.url = packageUrls["{version}"][platformName].format(version=version)
         else:
             package.url = versionUrls[platformName]
 
@@ -161,13 +160,16 @@ class App:
         self.is_win = self.platformName == "win"
         self.is_osx = self.platformName == "osx"
 
+        if isinstance(appArgv, str):
+            appArgv = appArgv.split(" ")
+
         # split args
         appArgv = appArgv if appArgv != None else sys.argv
         self.appArgv = appArgv
         self.commands = commands
         if "--cmd" in self.appArgv:
             i = self.appArgv.index("--cmd")
-            self.appArgv = appArgv[:i + 1]
+            self.appArgv = appArgv[:i]
             self.commands = self.commands + [appArgv[i + 1:]]
             
         # parse
@@ -246,7 +248,7 @@ class App:
         if self.args.install:
             self.stepInstall()
 
-        if self.args.cmd:
+        if len(self.commands) > 0:
             self.stepCommand()
 
     def stepCommand(self):
