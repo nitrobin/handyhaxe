@@ -261,12 +261,13 @@ class App:
 
         fullEnv = self.e.createFinalEnv(os.environ.copy())
         os.environ["PATH"] = fullEnv["PATH"]
+        logging.info("PATH:\n{}".format(os.environ["PATH"]))
 
         for command in self.commands:
-            if isinstance(command, str):
-                command = command.split(" ")
+            #if isinstance(command, str):
+            #   command = command.split(" ")
             logging.info("command: {}".format(command))
-            p = subprocess.Popen(command, env=fullEnv, stdin=sys.stdin,
+            p = subprocess.Popen(command, env=fullEnv, stdin=sys.stdin, shell=isinstance(command, str),
                                  stdout=sys.stdout, stderr=sys.stderr,cwd=self.args.cwd)
             p.wait()
             if p.returncode != 0:

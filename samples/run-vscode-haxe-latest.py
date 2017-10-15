@@ -7,11 +7,11 @@ if __name__ == '__main__' and __package__ is None:
 import handyhaxe
 import sys
 
-handyhaxe.make_env("-v -haxe=latest -vscode=stable", [
+handyhaxe.make_env("-v -haxe=latest", [
 #    "haxelib install format",
 #    "code --install-extension nadako.vshaxe",
 #    "code --uninstall-extension vshaxe.haxe-extension-pack",
-#    "code --install-extension vshaxe.haxe-extension-pack",
+    "code --install-extension vshaxe.haxe-extension-pack",
     "code ."
 ])
 
