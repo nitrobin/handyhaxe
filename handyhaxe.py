@@ -89,6 +89,19 @@ def getPackageInfo(packageName, version, platformName):
             "exportVariables": {
             },
             "exportPath": ["."]
+        },
+        "hashlink": {
+            "urls": {
+                "{version}": {
+                    "win":   "https://github.com/HaxeFoundation/hashlink/releases/download/{version}/hl-{version}-win32.zip",
+                    "osx":   "https://github.com/HaxeFoundation/hashlink/releases/download/{version}/hl-{version}-osx.zip",
+                    #"linux": "https://github.com/HaxeFoundation/hashlink/releases/download/{version}/hl-{version}-linux64.tar.gz"
+                }
+            },
+            "exportVariables": {
+                "LD_LIBRARY_PATH": "."
+            },
+            "exportPath": ["."]
         }
     }
     package = Package()
@@ -199,6 +212,10 @@ class App:
             self.packages.append(
                 getPackageInfo("vscode", self.args.vscode_version, self.args.platform)
             )
+        if self.args.hashlink_version != None:
+            self.packages.append(
+                getPackageInfo("hashlink", self.args.hashlink_version, self.args.platform)
+            )
 
 
     def parseArgs(self, appArgv, defaultPlatform):
@@ -220,6 +237,8 @@ class App:
             '--neko-version', help='Neko version (x.x.x|auto)', default="auto")
         parser.add_argument('-vscode', '--vscode-version',
                             help='VSCode version (stable|insider)', default=None)
+        parser.add_argument('-hl', '--hashlink-version',
+                            help='Hashlink version', default=None)
         parser.add_argument('--platform', default=defaultPlatform,
                             help="Platform (win|osx|linux) 64 bit only.")
         parser.add_argument('-i', '--install', action='store_true',
@@ -266,6 +285,10 @@ class App:
         for command in self.commands:
             #if isinstance(command, str):
             #   command = command.split(" ")
+            if callable(command):
+                command = command(self)
+                if command is None:
+                    continue
             logging.info("command: {}".format(command))
             p = subprocess.Popen(command, env=fullEnv, stdin=sys.stdin, shell=isinstance(command, str),
                                  stdout=sys.stdout, stderr=sys.stderr,cwd=self.args.cwd)
