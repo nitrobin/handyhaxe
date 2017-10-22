@@ -49,7 +49,9 @@ def getPackageInfo(packageName, version, platformName):
             },
             "exportVariables": {
                 "NEKO_PATH": ".",
-                "LD_LIBRARY_PATH": "."
+                "LD_LIBRARY_PATH": ".",
+                "DYLD_FALLBACK_LIBRARY_PATH": ".",
+                "DYLD_LIBRARY_PATH":"."
             },
             "exportPath": ["."]
         },
@@ -283,12 +285,12 @@ class App:
         logging.info("PATH:\n{}".format(os.environ["PATH"]))
 
         for command in self.commands:
-            #if isinstance(command, str):
-            #   command = command.split(" ")
             if callable(command):
                 command = command(self)
                 if command is None:
                     continue
+            #if isinstance(command, str):
+            #   command = command.split(" ")
             logging.info("command: {}".format(command))
             p = subprocess.Popen(command, env=fullEnv, stdin=sys.stdin, shell=isinstance(command, str),
                                  stdout=sys.stdout, stderr=sys.stderr,cwd=self.args.cwd)
